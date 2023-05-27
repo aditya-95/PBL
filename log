@@ -1,0 +1,8 @@
+1:
+	C	Right now the program can do a small amount of physics (not user controlled yet)
+	C	It can also Display text input when '/' is pressed.
+	P	The plan is when the user adds an object, we make him enter all the associated properties
+		before he 'plays' the simulation or add another object.
+	P	I will try to add multiple property support once the program is able to accept and interpret
+		single properties(THIS COULD TAKE TIME).
+	P	He can keep added objects and giving them properties. Until he 'plays the simulation'.
