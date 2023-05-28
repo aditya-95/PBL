@@ -13,6 +13,7 @@ const float REDUCING_FACTOR = 0.02;		// Multiplying this with all physics calcul
 SDL_Color TEXTCOLOR = {190, 190, 190};
 SDL_Color BG = {46, 50, 61};
 
+/*
 void DrawTextBox(const char* text, int x, int y, TTF_Font* font, SDL_Surface* text_surface, 
 		SDL_Texture* text_texture, SDL_Renderer* renderer) {
 
@@ -28,7 +29,9 @@ void DrawTextBox(const char* text, int x, int y, TTF_Font* font, SDL_Surface* te
 	SDL_FreeSurface(text_surface);
 
 	SDL_RenderCopy(renderer, text_texture, NULL, &text_target);
+	SDL_DestroyTexture(text_texture);
 }
+*/
 
 // THIS IS A CIRCLE AND NOT A RECTANGLE
 typedef struct {
@@ -36,13 +39,13 @@ typedef struct {
 	float mass, velocity, acceleration, force;
 } RectangleRB;
 
-void AddRectRB(int w, int h, int x, int y, float mass, float velocity, float acceleration,
-		float force, RectangleRB* rectRB) {
+void AddRectRB(int x, int y, float mass, float velocity, float acceleration, float force,
+		RectangleRB* rectRB) {
 	// take in 8 parameters
-	rectRB->circle_target.w = w;
-	rectRB->circle_target.h = h;
-	rectRB->circle_target.x = x;
-	rectRB->circle_target.y = y;
+	rectRB->circle_target.w = 30;
+	rectRB->circle_target.h = 30;
+	rectRB->circle_target.x = x-15;
+	rectRB->circle_target.y = y-15;
 
 	rectRB->mass = mass;
 	rectRB->velocity = velocity;
@@ -53,8 +56,9 @@ void AddRectRB(int w, int h, int x, int y, float mass, float velocity, float acc
 // CIRCLE
 void PointMassRBPhysics(RectangleRB* rrb) {
 	// TODO: resolve into x and y components and then and to x and y displacements
-	rrb->velocity += ((rrb->acceleration * 16) * REDUCING_FACTOR);
-	rrb->circle_target.y += ((rrb->velocity * 16) * REDUCING_FACTOR);
+	// rrb->velocity += ((rrb->acceleration * 16) * REDUCING_FACTOR);
+	rrb->velocity += ((rrb->acceleration* 16) * REDUCING_FACTOR);
+	rrb->circle_target.y += ((rrb->velocity * 16)* REDUCING_FACTOR);
 }
 
 void InitialSetup() {
@@ -82,14 +86,21 @@ int main() {
 	SDL_Surface* text_surface;
 	SDL_Texture* text_texture;
 
-	char input_text[101];
+	char message_text[51], input_text[7];
 	memset(input_text, 0, strlen(input_text));
+	memset(message_text, 0, strlen(message_text));
 
 	// keep track of all rectangle rigid bodies that are being created
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	bool running = true, input_mode = false, add_mode = true; 
+	// CONFIG FILE
+	FILE *config = fopen("config.txt", "r");
+	if (config == NULL) {
+		printf("Counld not open config file.\n");
+	}
+
+	bool running = true; 
 	SDL_StartTextInput();
 	while(running) {
 		Uint32 start = SDL_GetTicks();
@@ -101,29 +112,23 @@ int main() {
 				break;
 			}
 
-			// Text when '/' is pressed
-			if (event.type == SDL_KEYDOWN) {
-				if (event.key.keysym.scancode == SDL_SCANCODE_SLASH) {
-					input_mode = true;
-				}
-				if (event.key.keysym.scancode == SDL_SCANCODE_RETURN && input_mode) {
-					input_mode = false;
-				}
-			}
-			if (strlen(input_text) < 100) {
-				if (event.type == SDL_TEXTINPUT && input_mode) {
-					strcat(input_text, event.text.text);
-				}
-			}
-
 			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
 				if (rrb_counter < 10) {
-					// TODO: prompt to enter width, height, mass, acceleration, force
 					int x, y;
 					SDL_GetMouseState(&x, &y);
-					//AddRectRB(w, h, x, y, mass, velocity, acceleration, force)
-					AddRectRB(30, 30, x-15, y-15, 1, -40, 9.81, 1,&rrb[rrb_counter]);	// testing
-					rrb_counter+=1;
+					AddRectRB(x, y, 0, 0, 2, 0, &rrb[rrb_counter]);	// testing
+
+					float temp[4];
+					for (int i = 0; i < 4; i++) {
+						fscanf(config, "%f", &temp[i]);
+					}
+
+					rrb[rrb_counter].mass = temp[0];
+					rrb[rrb_counter].velocity = temp[1];
+					rrb[rrb_counter].acceleration= temp[2];
+					rrb[rrb_counter].force = temp[3];
+
+					rrb_counter += 1;
 				}
 				else {
 					printf("can't create more objects\n");
@@ -135,15 +140,11 @@ int main() {
 		SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
 		SDL_RenderClear(renderer);
 
-		for (int i = 0; i <= rrb_counter; i++) {
+		for (int i = 0; i < rrb_counter; i++) {
 			PointMassRBPhysics(&rrb[i]);
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
 		}
 		//DrawTextBox(text, text_target, font, text_surface, text_texture, renderer)
-		if (input_mode) {
-			DrawTextBox(input_text, 0, 700, font, text_surface, text_texture, renderer);
-		}
-
 		SDL_RenderPresent(renderer);
 		// END DRAWING
 
@@ -154,6 +155,15 @@ int main() {
 
 	} // end main loop
 
+	for (int i = 0; i < rrb_counter; i++) {
+		printf("Mass: %f\n", rrb[i].mass);
+		printf("Velocity: %f\n", rrb[i].velocity);
+		printf("Acceleration: %f\n", rrb[i].acceleration);
+		printf("Force: %f\n", rrb[i].force);
+		printf("\n");
+	}
+
+	fclose(config);
 	SDL_StopTextInput();
 
 	TTF_CloseFont(font);

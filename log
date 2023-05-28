@@ -6,3 +6,13 @@
 	P	I will try to add multiple property support once the program is able to accept and interpret
 		single properties(THIS COULD TAKE TIME).
 	P	He can keep added objects and giving them properties. Until he 'plays the simulation'.
+
+2:
+	C	The plan was a fail. The code was getting messy. So I dropped the idea. We are back at the
+		Original code
+	P	The plan now is the read all the values from a text file (I am thinking of dropping force
+		and mass for time being because the number of values the user has to edit will be too much
+		due to lack of UI)
+	C	The plan seems to work (read text file). The next thing I want is to give angle to velocity
+		and acceleration. We will ignore morce and mass effects for now. The objective is to
+		simulate motion in a plane.
