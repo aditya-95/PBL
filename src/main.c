@@ -8,7 +8,9 @@
 #include <string.h>
 #include <math.h>
 
-const float REDUCING_FACTOR = 0.02;		// Multiplying this with all physics calculations
+const int TIME_FACTOR = 8;				// (1000ms/FPS)
+const float REDUCING_FACTOR = 0.02;		// Multiplying this with all physics calculations to fit values of screen
+const float PI = 3.141592;
 
 typedef struct {
 	float x, y;
@@ -20,16 +22,14 @@ typedef struct {
 
 	float v1, v2, v3, a1, a2, a3, dv1, dv2, dv3, da1, da2, da3;	
 	vec2 vel1, vel2, vel3, acc1, acc2, acc3;		// velocity and acceleration
-	vec2 dvel1, dvel2, dvel3, dacc1, dacc2, dacc3;	// direction
 	vec2 rvel, racc;								// resultatn
 
 } RectangleRB;
 
 vec2 vec2Resolve(float magnitude, float direction) {
 	vec2 target_vector;
-	// x and y components are swapped because it worked
-	target_vector.x = magnitude * sin(direction);
-	target_vector.y = magnitude * cos(direction);
+	target_vector.x = magnitude * cos(direction * (PI/180));
+	target_vector.y = -1 * (magnitude * sin(direction * (PI/180)));
 	return target_vector;
 }
 
@@ -85,11 +85,11 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 
 void pointMassPhysics(RectangleRB *rrb) {
 	
-	rrb->rvel.x += ((rrb->racc.x * 16) * REDUCING_FACTOR);
-	rrb->rvel.y -= ((rrb->racc.y * 16) * REDUCING_FACTOR);
+	rrb->rvel.x += ((rrb->racc.x * TIME_FACTOR) * REDUCING_FACTOR);
+	rrb->rvel.y += ((rrb->racc.y * TIME_FACTOR) * REDUCING_FACTOR);
 
-	rrb->circle_target.x += ((rrb->rvel.x * 16) * REDUCING_FACTOR);
-	rrb->circle_target.y -= ((rrb->rvel.y * 16) * REDUCING_FACTOR);
+	rrb->circle_target.x += ((rrb->rvel.x * TIME_FACTOR) * REDUCING_FACTOR);
+	rrb->circle_target.y += ((rrb->rvel.y * TIME_FACTOR) * REDUCING_FACTOR);
 }
 
 void AddRectRB(int x, int y, RectangleRB* rectRB) {
@@ -99,15 +99,6 @@ void AddRectRB(int x, int y, RectangleRB* rectRB) {
 	rectRB->circle_target.x = x-15;
 	rectRB->circle_target.y = y-15;
 }
-
-
-/* CIRCLE
-void PointMassRBPhysics(RectangleRB* rrb) {
-	// TODO: resolve into x and y components and then and to x and y displacements
-	rrb->velocity += ((rrb->acceleration* 16) * REDUCING_FACTOR);
-	rrb->circle_target.y += ((rrb->velocity * 16)* REDUCING_FACTOR);
-}
-*/
 
 void InitialSetup() {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -196,8 +187,8 @@ int main() {
 		// END DRAWING
 
 		Uint32 elapsed_time = SDL_GetTicks() - start;
-		if (elapsed_time < 16) {
-			SDL_Delay(16 - elapsed_time);
+		if (elapsed_time < TIME_FACTOR) {
+			SDL_Delay(TIME_FACTOR - elapsed_time);
 		}
 
 	} // end main loop
