@@ -32,6 +32,14 @@ vec2 vec2Resolve(float magnitude, float direction) {
 	return target_vector;
 }
 
+vec2 calculateResultant(vec2 a, vec2 b, vec2 c) {
+	vec2 temp;
+	temp.x = a.x + b.x + c.x;
+	temp.y = a.y + b.y + c.y;
+
+	return temp;
+}
+
 // Read config file for velocity/acceleration magnitudes and angles and assign it to the added
 // objects
 void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
@@ -65,28 +73,22 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 		rrb[i].acc1 = vec2Resolve(rrb[i].a1, rrb[i].da1);
 		rrb[i].acc2 = vec2Resolve(rrb[i].a2, rrb[i].da2);
 		rrb[i].acc3 = vec2Resolve(rrb[i].a3, rrb[i].da3);
+
+		rrb->rvel = calculateResultant(rrb->vel1, rrb->vel2, rrb->vel3);
+		rrb->racc = calculateResultant(rrb->acc1, rrb->acc2, rrb->acc3);
 	}
 
 	fclose(config);
 }
 
-vec2 calculateResultant(vec2 a, vec2 b, vec2 c) {
-	vec2 temp;
-	temp.x = a.x + b.x + c.x;
-	temp.y = a.y + b.y + c.y;
-
-	return temp;
-}
 
 void pointMassPhysics(RectangleRB *rrb) {
-	rrb->rvel = calculateResultant(rrb->vel1, rrb->vel2, rrb->vel3);
-	rrb->racc = calculateResultant(rrb->acc1, rrb->acc2, rrb->acc3);
-
+	
 	rrb->rvel.x += ((rrb->racc.x * 16) * REDUCING_FACTOR);
 	rrb->rvel.y += ((rrb->racc.y * 16) * REDUCING_FACTOR);
 
 	rrb->circle_target.x += ((rrb->rvel.x * 16) * REDUCING_FACTOR);
-	rrb->circle_target.y += ((rrb->rvel.y * 16) * REDUCING_FACTOR);
+	rrb->circle_target.y += (-1*((rrb->rvel.y * 16) * REDUCING_FACTOR));
 }
 
 void AddRectRB(int x, int y, RectangleRB* rectRB) {
@@ -114,13 +116,14 @@ void InitialSetup() {
 // for testing
 void printRRB(RectangleRB *rrb, int rrb_counter) {
 	for (int i = 0; i < rrb_counter; i++) {
-		printf("rrb[%d]:\n\t%f %f %f %f %f %f\n\t%f %f %f %f %f %f\n",i, rrb[i].v1,
+		printf("rrb[%d]:\n %f %f %f %f %f %f\n %f %f %f %f %f %f\n",i, rrb[i].v1,
 				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
 				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
 		printf("\n");
-		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n",
+		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n rvel: %f %f\n racc: %f %f\n",
 				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
-				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y);
+				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
+				rrb[i].rvel.x, rrb[i].racc.y);
 		printf("\n");
 	}
 }
