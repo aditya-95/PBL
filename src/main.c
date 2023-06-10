@@ -75,8 +75,8 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 		rrb[i].acc2 = vec2Resolve(rrb[i].a2, rrb[i].da2);
 		rrb[i].acc3 = vec2Resolve(rrb[i].a3, rrb[i].da3);
 
-		rrb->rvel = calculateResultant(rrb->vel1, rrb->vel2, rrb->vel3);
-		rrb->racc = calculateResultant(rrb->acc1, rrb->acc2, rrb->acc3);
+		rrb[i].rvel = calculateResultant(rrb[i].vel1, rrb[i].vel2, rrb[i].vel3);
+		rrb[i].racc = calculateResultant(rrb[i].acc1, rrb[i].acc2, rrb[i].acc3);
 	}
 
 	fclose(config);
@@ -171,13 +171,11 @@ int main() {
 			ready_to_go = true;
 		}
 
-
 		// DRAWING
 		SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
 		SDL_RenderClear(renderer);
 
 		for (int i = 0; i < rrb_counter; i++) {
-			// PointMassRBPhysics(&rrb[i]);
 			if(ready_to_go) {
 				pointMassPhysics(&rrb[i]);
 			}
