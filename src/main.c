@@ -27,8 +27,9 @@ typedef struct {
 
 vec2 vec2Resolve(float magnitude, float direction) {
 	vec2 target_vector;
-	target_vector.x = magnitude * cos(direction);
-	target_vector.y = magnitude * sin(direction);
+	// x and y components are swapped because it worked
+	target_vector.x = magnitude * sin(direction);
+	target_vector.y = magnitude * cos(direction);
 	return target_vector;
 }
 
@@ -85,10 +86,10 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 void pointMassPhysics(RectangleRB *rrb) {
 	
 	rrb->rvel.x += ((rrb->racc.x * 16) * REDUCING_FACTOR);
-	rrb->rvel.y += ((rrb->racc.y * 16) * REDUCING_FACTOR);
+	rrb->rvel.y -= ((rrb->racc.y * 16) * REDUCING_FACTOR);
 
 	rrb->circle_target.x += ((rrb->rvel.x * 16) * REDUCING_FACTOR);
-	rrb->circle_target.y += (-1*((rrb->rvel.y * 16) * REDUCING_FACTOR));
+	rrb->circle_target.y -= ((rrb->rvel.y * 16) * REDUCING_FACTOR);
 }
 
 void AddRectRB(int x, int y, RectangleRB* rectRB) {
@@ -123,7 +124,7 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n rvel: %f %f\n racc: %f %f\n",
 				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
 				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
-				rrb[i].rvel.x, rrb[i].racc.y);
+				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y);
 		printf("\n");
 	}
 }
