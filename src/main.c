@@ -34,11 +34,11 @@ vec2 vec2Resolve(float magnitude, float direction) {
 }
 
 vec2 calculateResultant(vec2 a, vec2 b, vec2 c) {
-	vec2 temp;
-	temp.x = a.x + b.x + c.x;
-	temp.y = a.y + b.y + c.y;
+	vec2 resultant;
+	resultant.x = a.x + b.x + c.x;
+	resultant.y = a.y + b.y + c.y;
 
-	return temp;
+	return resultant;
 }
 
 // Read config file for velocity/acceleration magnitudes and angles and assign it to the added
@@ -108,15 +108,14 @@ void InitialSetup() {
 // for testing
 void printRRB(RectangleRB *rrb, int rrb_counter) {
 	for (int i = 0; i < rrb_counter; i++) {
-		printf("rrb[%d]:\n %f %f %f %f %f %f\n %f %f %f %f %f %f\n",i, rrb[i].v1,
+		printf("rrb[%d]:\n %f %f %f %f %f %f\n %f %f %f %f %f %f\n\n",i, rrb[i].v1,
 				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
 				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
-		printf("\n");
-		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n rvel: %f %f\n racc: %f %f\n",
+
+		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n rvel: %f %f\n racc: %f %f\n\n",
 				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
 				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
 				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y);
-		printf("\n");
 	}
 }
 
@@ -135,7 +134,7 @@ int main() {
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	bool running = true, setup_complete = false, ready_to_go = false; 
+	bool running = true, read_config = false, ready_to_go = false; 
 	while(running) {
 		Uint32 start = SDL_GetTicks();
 
@@ -146,7 +145,7 @@ int main() {
 				break;
 			}
 
-			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT && !setup_complete) {
+			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT && read_config == false) {
 				if (rrb_counter < 10) {
 					int x, y;
 					SDL_GetMouseState(&x, &y);
@@ -159,15 +158,15 @@ int main() {
 				}
 			}
 			if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
-				setup_complete = true;
+				read_config = true;
 			}
 		} // end user event loop
 
 		// Read config
-		if (setup_complete) {
+		if (read_config) {
 			readConfig("config", rrb, rrb_counter);
 			printRRB(rrb, rrb_counter);
-			setup_complete = false;
+			read_config = false;
 			ready_to_go = true;
 		}
 
