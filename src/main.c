@@ -1,72 +1,81 @@
-// gcc main.c -g -o ../bin/prog -lSDL2 -lSDL2_image -lSDL2_ttf && ./../bin/prog
+// gcc main.c -g -o ../bin/prog -lm -lSDL2 -lSDL2_image && ./../bin/prog
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
 
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 const float REDUCING_FACTOR = 0.02;		// Multiplying this with all physics calculations
-
-SDL_Color TEXTCOLOR = {190, 190, 190};
-SDL_Color BG = {46, 50, 61};
-
-/*
-void DrawTextBox(const char* text, int x, int y, TTF_Font* font, SDL_Surface* text_surface, 
-		SDL_Texture* text_texture, SDL_Renderer* renderer) {
-
-	text_surface = TTF_RenderText_Shaded(font, text, TEXTCOLOR, BG);	// Create Surface
-	text_texture = SDL_CreateTextureFromSurface(renderer, text_surface); // Create texture from Surface
-
-	SDL_Rect text_target;
-	text_target.x = x;
-	text_target.y = y;
-	text_target.w = text_surface->w;
-	text_target.h = text_surface->h;
-
-	SDL_FreeSurface(text_surface);
-
-	SDL_RenderCopy(renderer, text_texture, NULL, &text_target);
-	SDL_DestroyTexture(text_texture);
-}
-*/
 
 // THIS IS A CIRCLE AND NOT A RECTANGLE
 typedef struct {
 	SDL_Rect circle_target;
-	float mass, velocity, acceleration, force;
+	float v1, v2, v3, a1, a2, a3, dv1, dv2, dv3, da1, da2, da3;
 } RectangleRB;
 
-void AddRectRB(int x, int y, float mass, float velocity, float acceleration, float force,
-		RectangleRB* rectRB) {
-	// take in 8 parameters
+typedef struct {
+	float x, y;
+} vec2;
+
+void vec2Resolve(float magnitude, float direction, vec2 *target_vector) {
+	target_vector->x = magnitude * cos(direction);
+	target_vector->y = magnitude * sin(direction);
+}
+
+// Read config file for velocity/acceleration magnitudes and angles and assign it to the added
+// objects
+void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
+	FILE *config = fopen(path, "r");
+	if (config == NULL) {
+		printf("could not open config");
+	}
+
+	for (int i = 0; i < rrb_counter; i++) {
+		float temp[12];
+		for (int i = 0; i < 12; i++) {
+			fscanf(config, "%f", &temp[i]);
+		}
+
+		rrb[i].v1 = temp[0];
+		rrb[i].v2 = temp[1];
+		rrb[i].v3 = temp[2];
+		rrb[i].a1 = temp[3];
+		rrb[i].a2 = temp[4];
+		rrb[i].a3 = temp[5];
+		rrb[i].dv1 = temp[6];
+		rrb[i].dv2 = temp[7];
+		rrb[i].dv3 = temp[8];
+		rrb[i].da1 = temp[9];
+		rrb[i].da2 = temp[10];
+		rrb[i].da3 = temp[11];
+	}
+
+	fclose(config);
+}
+
+void AddRectRB(int x, int y, RectangleRB* rectRB) {
+	// for showing the object
 	rectRB->circle_target.w = 30;
 	rectRB->circle_target.h = 30;
 	rectRB->circle_target.x = x-15;
 	rectRB->circle_target.y = y-15;
-
-	rectRB->mass = mass;
-	rectRB->velocity = velocity;
-	rectRB->acceleration= acceleration;
-	rectRB->force = force;
 }
 
-// CIRCLE
+/* CIRCLE
 void PointMassRBPhysics(RectangleRB* rrb) {
 	// TODO: resolve into x and y components and then and to x and y displacements
 	// rrb->velocity += ((rrb->acceleration * 16) * REDUCING_FACTOR);
 	rrb->velocity += ((rrb->acceleration* 16) * REDUCING_FACTOR);
 	rrb->circle_target.y += ((rrb->velocity * 16)* REDUCING_FACTOR);
 }
+*/
 
 void InitialSetup() {
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_PNG);
-	if (TTF_Init() == -1) {
-		printf("Failed to intialize SDL_ttf: %s\n", SDL_GetError());
-	}
 }
 
 int main() {
@@ -80,28 +89,11 @@ int main() {
 	// IMAGE
 	SDL_Texture* circle_image = IMG_LoadTexture(renderer, "../images/circle.png");
 
-	// TEXT
-	TTF_Font* font;
-	font = TTF_OpenFont("../res/fonts/SourceCodePro-Regular.ttf", 17);
-	SDL_Surface* text_surface;
-	SDL_Texture* text_texture;
-
-	char message_text[51], input_text[7];
-	memset(input_text, 0, strlen(input_text));
-	memset(message_text, 0, strlen(message_text));
-
 	// keep track of all rectangle rigid bodies that are being created
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	// CONFIG FILE
-	FILE *config = fopen("config.txt", "r");
-	if (config == NULL) {
-		printf("Counld not open config file.\n");
-	}
-
-	bool running = true; 
-	SDL_StartTextInput();
+	bool running = true, setup_complete = false; 
 	while(running) {
 		Uint32 start = SDL_GetTicks();
 
@@ -112,21 +104,11 @@ int main() {
 				break;
 			}
 
-			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+			if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT && !setup_complete) {
 				if (rrb_counter < 10) {
 					int x, y;
 					SDL_GetMouseState(&x, &y);
-					AddRectRB(x, y, 0, 0, 2, 0, &rrb[rrb_counter]);	// testing
-
-					float temp[4];
-					for (int i = 0; i < 4; i++) {
-						fscanf(config, "%f", &temp[i]);
-					}
-
-					rrb[rrb_counter].mass = temp[0];
-					rrb[rrb_counter].velocity = temp[1];
-					rrb[rrb_counter].acceleration= temp[2];
-					rrb[rrb_counter].force = temp[3];
+					AddRectRB(x, y, &rrb[rrb_counter]);	// testing
 
 					rrb_counter += 1;
 				}
@@ -134,17 +116,31 @@ int main() {
 					printf("can't create more objects\n");
 				}
 			}
+			if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+				setup_complete = true;
+			}
 		} // end user event loop
+
+		// Read config
+		if (setup_complete) {
+			readConfig("config", rrb, rrb_counter);
+			for (int i = 0; i < rrb_counter; i++) {
+				printf("rrb[%d]:\n\t%f %f %f %f %f %f\n\t%f %f %f %f %f %f\n",i, rrb[i].v1,
+						rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
+						rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
+			}
+			setup_complete = false;
+		}
+
 
 		// DRAWING
 		SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
 		SDL_RenderClear(renderer);
 
 		for (int i = 0; i < rrb_counter; i++) {
-			PointMassRBPhysics(&rrb[i]);
+			// PointMassRBPhysics(&rrb[i]);
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
 		}
-		//DrawTextBox(text, text_target, font, text_surface, text_texture, renderer)
 		SDL_RenderPresent(renderer);
 		// END DRAWING
 
@@ -155,18 +151,6 @@ int main() {
 
 	} // end main loop
 
-	for (int i = 0; i < rrb_counter; i++) {
-		printf("Mass: %f\n", rrb[i].mass);
-		printf("Velocity: %f\n", rrb[i].velocity);
-		printf("Acceleration: %f\n", rrb[i].acceleration);
-		printf("Force: %f\n", rrb[i].force);
-		printf("\n");
-	}
-
-	fclose(config);
-	SDL_StopTextInput();
-
-	TTF_CloseFont(font);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
