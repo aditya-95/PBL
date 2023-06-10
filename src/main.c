@@ -1,4 +1,4 @@
-// gcc main.c -g -o ../bin/prog -lm -lSDL2 -lSDL2_image && ./../bin/prog
+// gcc main.c -Wall -g -o ../bin/prog -lm -lSDL2 -lSDL2_image && ./../bin/prog
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -10,19 +10,26 @@
 
 const float REDUCING_FACTOR = 0.02;		// Multiplying this with all physics calculations
 
-// THIS IS A CIRCLE AND NOT A RECTANGLE
-typedef struct {
-	SDL_Rect circle_target;
-	float v1, v2, v3, a1, a2, a3, dv1, dv2, dv3, da1, da2, da3;
-} RectangleRB;
-
 typedef struct {
 	float x, y;
 } vec2;
 
-void vec2Resolve(float magnitude, float direction, vec2 *target_vector) {
-	target_vector->x = magnitude * cos(direction);
-	target_vector->y = magnitude * sin(direction);
+// THIS IS A CIRCLE AND NOT A RECTANGLE
+typedef struct {
+	SDL_Rect circle_target;
+
+	float v1, v2, v3, a1, a2, a3, dv1, dv2, dv3, da1, da2, da3;	
+	vec2 vel1, vel2, vel3, acc1, acc2, acc3;		// velocity and acceleration
+	vec2 dvel1, dvel2, dvel3, dacc1, dacc2, dacc3;	// direction
+	vec2 rvel, racc;								// resultatn
+
+} RectangleRB;
+
+vec2 vec2Resolve(float magnitude, float direction) {
+	vec2 target_vector;
+	target_vector.x = magnitude * cos(direction);
+	target_vector.y = magnitude * sin(direction);
+	return target_vector;
 }
 
 // Read config file for velocity/acceleration magnitudes and angles and assign it to the added
@@ -51,9 +58,35 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 		rrb[i].da1 = temp[9];
 		rrb[i].da2 = temp[10];
 		rrb[i].da3 = temp[11];
+
+		rrb[i].vel1 = vec2Resolve(rrb[i].v1, rrb[i].dv1);
+		rrb[i].vel2 = vec2Resolve(rrb[i].v2, rrb[i].dv2);
+		rrb[i].vel3 = vec2Resolve(rrb[i].v3, rrb[i].dv3);
+		rrb[i].acc1 = vec2Resolve(rrb[i].a1, rrb[i].da1);
+		rrb[i].acc2 = vec2Resolve(rrb[i].a2, rrb[i].da2);
+		rrb[i].acc3 = vec2Resolve(rrb[i].a3, rrb[i].da3);
 	}
 
 	fclose(config);
+}
+
+vec2 calculateResultant(vec2 a, vec2 b, vec2 c) {
+	vec2 temp;
+	temp.x = a.x + b.x + c.x;
+	temp.y = a.y + b.y + c.y;
+
+	return temp;
+}
+
+void pointMassPhysics(RectangleRB *rrb) {
+	rrb->rvel = calculateResultant(rrb->vel1, rrb->vel2, rrb->vel3);
+	rrb->racc = calculateResultant(rrb->acc1, rrb->acc2, rrb->acc3);
+
+	rrb->rvel.x += ((rrb->racc.x * 16) * REDUCING_FACTOR);
+	rrb->rvel.y += ((rrb->racc.y * 16) * REDUCING_FACTOR);
+
+	rrb->circle_target.x += ((rrb->rvel.x * 16) * REDUCING_FACTOR);
+	rrb->circle_target.y += ((rrb->rvel.y * 16) * REDUCING_FACTOR);
 }
 
 void AddRectRB(int x, int y, RectangleRB* rectRB) {
@@ -64,10 +97,10 @@ void AddRectRB(int x, int y, RectangleRB* rectRB) {
 	rectRB->circle_target.y = y-15;
 }
 
+
 /* CIRCLE
 void PointMassRBPhysics(RectangleRB* rrb) {
 	// TODO: resolve into x and y components and then and to x and y displacements
-	// rrb->velocity += ((rrb->acceleration * 16) * REDUCING_FACTOR);
 	rrb->velocity += ((rrb->acceleration* 16) * REDUCING_FACTOR);
 	rrb->circle_target.y += ((rrb->velocity * 16)* REDUCING_FACTOR);
 }
@@ -76,6 +109,20 @@ void PointMassRBPhysics(RectangleRB* rrb) {
 void InitialSetup() {
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_PNG);
+}
+
+// for testing
+void printRRB(RectangleRB *rrb, int rrb_counter) {
+	for (int i = 0; i < rrb_counter; i++) {
+		printf("rrb[%d]:\n\t%f %f %f %f %f %f\n\t%f %f %f %f %f %f\n",i, rrb[i].v1,
+				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
+				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
+		printf("\n");
+		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n",
+				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
+				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y);
+		printf("\n");
+	}
 }
 
 int main() {
@@ -93,7 +140,7 @@ int main() {
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	bool running = true, setup_complete = false; 
+	bool running = true, setup_complete = false, ready_to_go = false; 
 	while(running) {
 		Uint32 start = SDL_GetTicks();
 
@@ -124,12 +171,9 @@ int main() {
 		// Read config
 		if (setup_complete) {
 			readConfig("config", rrb, rrb_counter);
-			for (int i = 0; i < rrb_counter; i++) {
-				printf("rrb[%d]:\n\t%f %f %f %f %f %f\n\t%f %f %f %f %f %f\n",i, rrb[i].v1,
-						rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
-						rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
-			}
+			printRRB(rrb, rrb_counter);
 			setup_complete = false;
+			ready_to_go = true;
 		}
 
 
@@ -139,6 +183,9 @@ int main() {
 
 		for (int i = 0; i < rrb_counter; i++) {
 			// PointMassRBPhysics(&rrb[i]);
+			if(ready_to_go) {
+				pointMassPhysics(&rrb[i]);
+			}
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
 		}
 		SDL_RenderPresent(renderer);
