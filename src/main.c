@@ -84,7 +84,6 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 
 
 void pointMassPhysics(RectangleRB *rrb) {
-	
 	rrb->rvel.x += ((rrb->racc.x * TIME_FACTOR) * REDUCING_FACTOR);
 	rrb->rvel.y += ((rrb->racc.y * TIME_FACTOR) * REDUCING_FACTOR);
 
@@ -112,7 +111,7 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
 				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
 
-		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n rvel: %f %f\n racc: %f %f\n\n",
+		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n resultant velocity: %f %f\n resultant acceleration: %f %f\n\n",
 				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
 				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
 				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y);
@@ -130,7 +129,7 @@ int main() {
 	// IMAGE
 	SDL_Texture* circle_image = IMG_LoadTexture(renderer, "../images/circle.png");
 
-	// keep track of all rectangle rigid bodies that are being created
+	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
