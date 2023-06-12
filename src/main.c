@@ -133,7 +133,7 @@ int main() {
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	bool running = true, read_config = false, ready_to_go = false; 
+	bool running = true, read_config = false, ready_to_go = false, pause = false; 
 	while(running) {
 		Uint32 start = SDL_GetTicks();
 
@@ -156,8 +156,24 @@ int main() {
 					printf("can't create more objects\n");
 				}
 			}
-			if (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
-				read_config = true;
+			if (event.type == SDL_KEYDOWN) {
+
+				// using s and p for pausing and playing because space is registering both pause
+				// and play
+				if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+					pause = true;
+					// TODO: print current velcity (resultant and components), 
+					// distance covered (x and y) and time
+					// use a loop to go through all objects
+				}
+
+				if (event.key.keysym.scancode == SDL_SCANCODE_P && pause == true) {
+					pause = false;
+				}
+
+				if (event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+					read_config = true;
+				}
 			}
 		} // end user event loop
 
@@ -174,7 +190,7 @@ int main() {
 		SDL_RenderClear(renderer);
 
 		for (int i = 0; i < rrb_counter; i++) {
-			if(ready_to_go) {
+			if(ready_to_go && pause == false) {
 				pointMassPhysics(&rrb[i]);
 			}
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
