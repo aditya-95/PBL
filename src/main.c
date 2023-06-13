@@ -118,6 +118,21 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 	}
 }
 
+bool rrbFloorClip(RectangleRB *rrb) {
+	if (rrb->circle_target.y >= 600) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
+
+void rrbGetInfo(RectangleRB *rrb) {
+	float vel_resultant = sqrt((rrb->rvel.x * rrb->rvel.x) + (rrb->rvel.y * rrb->rvel.y));
+	float vel_resultant_dir = atan(rrb->rvel.y / rrb->rvel.x) * (180/PI);
+	printf("velocity: %f @ %f \n", vel_resultant, vel_resultant_dir);
+}
+
 int main() {
 	InitialSetup();
 
@@ -128,6 +143,7 @@ int main() {
 
 	// IMAGE
 	SDL_Texture* circle_image = IMG_LoadTexture(renderer, "../images/circle.png");
+	SDL_Texture* background = IMG_LoadTexture(renderer, "../images/background.png")
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
@@ -156,17 +172,13 @@ int main() {
 					printf("can't create more objects\n");
 				}
 			}
-			if (event.type == SDL_KEYDOWN) {
+			if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
 
-				// using s and p for pausing and playing because space is registering both pause
+				// using o and p for pausing and playing because space is registering both pause
 				// and play
-				if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+				if (event.key.keysym.scancode == SDL_SCANCODE_O) {
 					pause = true;
-					// TODO: print current velcity (resultant and components), 
-					// distance covered (x and y) and time
-					// use a loop to go through all objects
 				}
-
 				if (event.key.keysym.scancode == SDL_SCANCODE_P && pause == true) {
 					pause = false;
 				}
@@ -180,7 +192,7 @@ int main() {
 		// Read config
 		if (read_config) {
 			readConfig("config", rrb, rrb_counter);
-			printRRB(rrb, rrb_counter);
+			// printRRB(rrb, rrb_counter);
 			read_config = false;
 			ready_to_go = true;
 		}
@@ -190,9 +202,13 @@ int main() {
 		SDL_RenderClear(renderer);
 
 		for (int i = 0; i < rrb_counter; i++) {
-			if(ready_to_go && pause == false) {
+			if(ready_to_go && pause == false && rrbFloorClip(&rrb[i])) {
 				pointMassPhysics(&rrb[i]);
 			}
+			if (pause) {
+				rrbGetInfo(&rrb[i]);
+			}
+
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
 		}
 		SDL_RenderPresent(renderer);
