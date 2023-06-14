@@ -151,10 +151,12 @@ int main() {
 	SDL_Texture* circle_image = IMG_LoadTexture(renderer, "../images/circle.png");
 	SDL_Texture* background_image = IMG_LoadTexture(renderer, "../images/bg.png");
 	SDL_Texture* ground_image = IMG_LoadTexture(renderer, "../images/ground.png");
-	// SDL_Texture* vector_arrow_image = IMG_LoadTexture(renderer, "../images/vector_arrow.png");
+	SDL_Texture* vector_arrow_image = IMG_LoadTexture(renderer, "../images/vector_arrow.png");
+	SDL_Texture* resultant_arrow_image = IMG_LoadTexture(renderer, "../images/resultant_arrow.png");
 
 	SDL_Rect bg_rect = {0, 0, 1920, 1080};
 	SDL_Rect ground_rect = {0, screen_height - 100, 1920, 1080};
+	SDL_Rect resultant_arrow_rect = {50, 300, 100, 5};
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
@@ -222,6 +224,7 @@ int main() {
 			}
 
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
+			SDL_RenderCopyEx(renderer, resultant_arrow_image, NULL, &resultant_arrow_rect, 45, NULL, SDL_FLIP_NONE);
 		}
 		SDL_RenderPresent(renderer);
 		// END DRAWING
