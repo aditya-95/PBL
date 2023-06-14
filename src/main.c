@@ -118,6 +118,7 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 	}
 }
 
+
 bool rrbFloorClip(RectangleRB *rrb) {
 	if (rrb->circle_target.y >= 600) {
 		return false;
@@ -127,10 +128,15 @@ bool rrbFloorClip(RectangleRB *rrb) {
 	}
 }
 
+// Using this to display instantaneous values on the window (incomplete)
 void rrbGetInfo(RectangleRB *rrb) {
 	float vel_resultant = sqrt((rrb->rvel.x * rrb->rvel.x) + (rrb->rvel.y * rrb->rvel.y));
 	float vel_resultant_dir = atan(rrb->rvel.y / rrb->rvel.x) * (180/PI);
-	printf("velocity: %f @ %f \n", vel_resultant, vel_resultant_dir);
+	float x_pos = rrb->circle_target.x;
+	float y_pos = rrb->circle_target.y;
+
+	printf("Resultant velocity = %f @ %f\tPosition: (%f, %f)\n", vel_resultant, vel_resultant_dir,
+			x_pos, y_pos);
 }
 
 int main() {
@@ -143,7 +149,12 @@ int main() {
 
 	// IMAGE
 	SDL_Texture* circle_image = IMG_LoadTexture(renderer, "../images/circle.png");
-	SDL_Texture* background = IMG_LoadTexture(renderer, "../images/background.png")
+	SDL_Texture* background_image = IMG_LoadTexture(renderer, "../images/bg.png");
+	SDL_Texture* ground_image = IMG_LoadTexture(renderer, "../images/ground.png");
+	// SDL_Texture* vector_arrow_image = IMG_LoadTexture(renderer, "../images/vector_arrow.png");
+
+	SDL_Rect bg_rect = {0, 0, 1920, 1080};
+	SDL_Rect ground_rect = {0, screen_height - 100, 1920, 1080};
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
@@ -192,20 +203,21 @@ int main() {
 		// Read config
 		if (read_config) {
 			readConfig("config", rrb, rrb_counter);
-			// printRRB(rrb, rrb_counter);
+			printRRB(rrb, rrb_counter);
 			read_config = false;
 			ready_to_go = true;
 		}
 
 		// DRAWING
-		SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
+		// SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
 		SDL_RenderClear(renderer);
+
+		SDL_RenderCopy(renderer, background_image, NULL, &bg_rect);
+		SDL_RenderCopy(renderer, ground_image, NULL, &ground_rect);
 
 		for (int i = 0; i < rrb_counter; i++) {
 			if(ready_to_go && pause == false && rrbFloorClip(&rrb[i])) {
 				pointMassPhysics(&rrb[i]);
-			}
-			if (pause) {
 				rrbGetInfo(&rrb[i]);
 			}
 
