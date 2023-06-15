@@ -23,6 +23,7 @@ typedef struct {
 	float v1, v2, v3, a1, a2, a3, dv1, dv2, dv3, da1, da2, da3;	
 	vec2 vel1, vel2, vel3, acc1, acc2, acc3;		// velocity and acceleration
 	vec2 rvel, racc;								// resultatn
+	double rvel_dir, racc_dir;
 
 } RectangleRB;
 
@@ -77,6 +78,7 @@ void readConfig(const char* path, RectangleRB *rrb, int rrb_counter) {
 
 		rrb[i].rvel = calculateResultant(rrb[i].vel1, rrb[i].vel2, rrb[i].vel3);
 		rrb[i].racc = calculateResultant(rrb[i].acc1, rrb[i].acc2, rrb[i].acc3);
+		rrb[i].rvel_dir = atan(rrb[i].rvel.y / rrb[i].rvel.x) * (180/PI);
 	}
 
 	fclose(config);
@@ -111,10 +113,10 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
 				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
 
-		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n resultant velocity: %f %f\n resultant acceleration: %f %f\n\n",
+		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n resultant velocity: %f %f\n resultant acceleration: %f %f\n resultant velocity direction: %f \n",
 				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
 				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
-				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y);
+				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y, rrb[i].rvel_dir);
 	}
 }
 
@@ -156,7 +158,8 @@ int main() {
 
 	SDL_Rect bg_rect = {0, 0, 1920, 1080};
 	SDL_Rect ground_rect = {0, screen_height - 100, 1920, 1080};
-	SDL_Rect resultant_arrow_rect = {50, 300, 100, 5};
+	SDL_Rect resultant_arrow_rect = {50, 300, 100, 4};
+	SDL_Point arrow_pivot_point = {0, 1};
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
@@ -223,8 +226,12 @@ int main() {
 				rrbGetInfo(&rrb[i]);
 			}
 
+			resultant_arrow_rect.x = rrb[i].circle_target.x + 15;
+			resultant_arrow_rect.y = rrb[i].circle_target.y + 13;
+
+			SDL_RenderCopyEx(renderer, resultant_arrow_image, NULL, &resultant_arrow_rect, rrb[i].rvel_dir, &arrow_pivot_point, SDL_FLIP_NONE);
+
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
-			SDL_RenderCopyEx(renderer, resultant_arrow_image, NULL, &resultant_arrow_rect, 45, NULL, SDL_FLIP_NONE);
 		}
 		SDL_RenderPresent(renderer);
 		// END DRAWING
@@ -235,6 +242,7 @@ int main() {
 		}
 
 	} // end main loop
+	printRRB(&rrb, rrb_counter);
 
 	SDL_DestroyWindow(window);
 	SDL_Quit();
