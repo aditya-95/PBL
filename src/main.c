@@ -168,7 +168,7 @@ int main() {
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
-	bool running = true, read_config = false, ready_to_go = false, pause = false; 
+	bool running = true, read_config = false, pause = false; 
 	int return_count = 0;
 	while(running) {
 		Uint32 start = SDL_GetTicks();
@@ -205,8 +205,12 @@ int main() {
 
 				if (event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
 					return_count += 1;
-					printf("return was pressed\n");
-					//read_config = true;
+				}
+
+				// RESET
+				if (event.key.keysym.scancode == SDL_SCANCODE_R) {
+					rrb_counter = 0;
+					return_count = 0;
 				}
 			}
 		} // end user event loop
@@ -216,7 +220,6 @@ int main() {
 			readConfig("config", rrb, rrb_counter);
 			// printRRB(rrb, rrb_counter);
 			read_config = false;
-			ready_to_go = true;
 		}
 
 		// DRAWING
@@ -254,15 +257,15 @@ int main() {
 			}
 
 			// SHOW RESULTANT ARROW
-			if (return_count >= 1) {
+			if (return_count >= 1 && truncf(sqrt((rrb[i].rvel.x * rrb[i].rvel.x) + 
+							(rrb[i].rvel.y * rrb[i].rvel.y))) != 0) {
+
 				resultant_arrow_rect.x = rrb[i].circle_target.x + 15;
 				resultant_arrow_rect.y = rrb[i].circle_target.y + 13;
 
 				// RESOLVE THIS
 				SDL_RenderCopyEx(renderer, resultant_arrow_image, NULL, &resultant_arrow_rect, 
-						270-(90 - rrb[i].rvel_dir), &arrow_pivot_point, SDL_FLIP_NONE);
-
-				printf("%f\n", rrb[i].rvel_dir);
+						rrb[i].rvel_dir, &arrow_pivot_point, SDL_FLIP_NONE);
 			}
 
 			SDL_RenderCopy(renderer, circle_image, NULL, &rrb[i].circle_target);
