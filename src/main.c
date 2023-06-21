@@ -1,7 +1,9 @@
-// gcc main.c -Wall -g -o ../bin/prog -lm -lSDL2 -lSDL2_image && ./../bin/prog
+// gcc main.c -Wall -g -o ../bin/prog -lm -lSDL2 -lSDL2_image -lSDL2_ttf && ./../bin/prog
+// for windows: gcc main.c -Wall -g -o ../bin/prog -lm -lSDL2 -lSDL2_image -lSDL_ttf && ./../bin/prog
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -106,6 +108,9 @@ void AddRectRB(int x, int y, RectangleRB* rectRB) {
 void InitialSetup() {
 	SDL_Init(SDL_INIT_VIDEO);
 	IMG_Init(IMG_INIT_PNG);
+	if (TTF_Init() == -1) {
+		printf("SDL2_ttf not initialized. ERROR: %s\n", TTF_GetError());
+	}
 }
 
 // for testing
@@ -164,12 +169,46 @@ int main() {
 	SDL_Rect vector_arrow_rect = {50, 300, 100, 4};
 	SDL_Point arrow_pivot_point = {0, 1};
 
+	// TEXT
+	unsigned int font_size = 100;
+	SDL_Color font_color = {2, 2, 2};
+	TTF_Font* font = TTF_OpenFont("../res/fonts/Ubuntu-Bold.ttf", font_size);
+	SDL_Surface* text_surface;
+	SDL_Texture* text_texture;
+	SDL_Rect text_rect = {5, 5, 300, 70};
+
+	char rrb_info[100];
+
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
+	// Set all values of rrb bodies to 0;
+	for (int i = 0; i < 11; i++) {
+		rrb[i].circle_target.x = 0;
+		rrb[i].circle_target.y = 0;
+
+		rrb[i].v1 = 0;
+		rrb[i].v2 = 0;
+		rrb[i].v3 = 0;
+
+		rrb[i].a1 = 0;
+		rrb[i].a2 = 0;
+		rrb[i].a3 = 0;
+
+		rrb[i].dv1 = 0;
+		rrb[i].dv2 = 0;
+		rrb[i].dv3 = 0;
+
+		rrb[i].da1 = 0;
+		rrb[i].da2 = 0;
+		rrb[i].da3 = 0;
+	}
+
 	bool running = true, read_config = false, pause = false; 
-	int return_count = 0;
+	int return_count = 0, info_counter = 0;
+	float resultant = 0;
+
 	while(running) {
 		Uint32 start = SDL_GetTicks();
 
@@ -212,6 +251,17 @@ int main() {
 					rrb_counter = 0;
 					return_count = 0;
 				}
+
+				// Circle through object data
+				if (event.key.keysym.scancode == SDL_SCANCODE_RIGHT) {
+					if (info_counter > 10) {
+						info_counter = 0;
+					}
+					else {
+						info_counter++;
+					}
+				}
+
 			}
 		} // end user event loop
 
@@ -223,11 +273,22 @@ int main() {
 		}
 
 		// DRAWING
-		// SDL_SetRenderDrawColor(renderer, 46, 50, 61, 255);
 		SDL_RenderClear(renderer);
 
+		// draw background and forground
 		SDL_RenderCopy(renderer, background_image, NULL, &bg_rect);
 		SDL_RenderCopy(renderer, ground_image, NULL, &ground_rect);
+
+		// text drawing
+		resultant = sqrt((rrb[info_counter].rvel.x * rrb[info_counter].rvel.x) + (rrb[info_counter].rvel.y * rrb[info_counter].rvel.y));
+		sprintf(rrb_info, "velocity: (%f, %f)\nResultant velocity: %f @ %f\n", 
+				rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
+
+		text_surface = TTF_RenderText_Blended_Wrapped(font, rrb_info, font_color, 0);
+		text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+		SDL_FreeSurface(text_surface);
+
+		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
 
 		for (int i = 0; i < rrb_counter; i++) {
 			if (return_count == 2 && !pause && rrbFloorClip(&rrb[i])) {
@@ -283,6 +344,7 @@ int main() {
 	// printRRB(&rrb, rrb_counter);
 
 	SDL_DestroyWindow(window);
+	TTF_CloseFont(font);
 	SDL_Quit();
 	return 0;
 }
