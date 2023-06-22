@@ -177,14 +177,20 @@ int main() {
 	SDL_Texture* text_texture;
 	SDL_Rect text_rect = {5, 5, 300, 70};
 
-	char rrb_info[100];
+	char velocity_x[100];
+	char velocity_y[100];
+	char rrb_resultant[100];
+	char r_direction[100];
+	char final_string[400];
+	// char *result;
+	// int len = 0;
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
 	int rrb_counter = 0;
 
 	// Set all values of rrb bodies to 0;
-	for (int i = 0; i < 11; i++) {
+	for (int i = 0; i < 10; i++) {
 		rrb[i].circle_target.x = 0;
 		rrb[i].circle_target.y = 0;
 
@@ -279,19 +285,47 @@ int main() {
 		SDL_RenderCopy(renderer, background_image, NULL, &bg_rect);
 		SDL_RenderCopy(renderer, ground_image, NULL, &ground_rect);
 
-		// text drawing
+		// text drawing (THIS IS REDUCING PERFORANCE)
 		resultant = sqrt((rrb[info_counter].rvel.x * rrb[info_counter].rvel.x) + (rrb[info_counter].rvel.y * rrb[info_counter].rvel.y));
-		sprintf(rrb_info, "velocity: (%f, %f)\nResultant velocity: %f @ %f\n", 
-				rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
 
-		text_surface = TTF_RenderText_Blended_Wrapped(font, rrb_info, font_color, 0);
+		/*
+		len = snprintf(NULL, 0, "%d\nvelocity: (%f, %f)\nResultant velocity: %f @ %f", 
+				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
+		result = malloc(len + 1);
+		snprintf(result, len + 1, "%d\nvelocity: (%f, %f)\nResultant velocity: %f @ %f", 
+				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
+
+
+		strcat(velocity_x, "\n");
+		gcvt(rrb[info_counter].rvel.y, 6, velocity_y);
+		strcat(velocity_y, "\n");
+		gcvt(resultant, 6, rrb_resultant);
+		strcat(rrb_resultant, "\n");
+		gcvt(rrb[info_counter].rvel_dir, 6, r_direction);
+
+		strcat(final_string, "Resultant velocity_x: ");
+		strcat(final_string, velocity_x);
+		strcat(final_string, "Resultnat velocity_y:");
+		strcat(final_string, velocity_y);
+		strcat(final_string, "Resultant: ");
+		strcat(final_string, rrb_resultant);
+		strcat(final_string, " @ ");
+		strcat(final_string, r_direction);
+
+		text_surface = TTF_RenderText_Blended_Wrapped(font, final_string, font_color, 0);
+
+		memset(final_string, 0, sizeof(final_string));
+
 		text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
 		SDL_FreeSurface(text_surface);
-
 		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
+		*/
+
+		printf("%d. Resultant velocity = %f @ %f | Resultant Velocity Components = (%f, %f)\r", 
+				info_counter, resultant, rrb[info_counter].rvel_dir, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y);
 
 		for (int i = 0; i < rrb_counter; i++) {
-			if (return_count == 2 && !pause && rrbFloorClip(&rrb[i])) {
+			if (return_count >= 2 && !pause && rrbFloorClip(&rrb[i])) {
 				pointMassPhysics(&rrb[i]);
 				// rrbGetInfo(&rrb[i]);
 			}
