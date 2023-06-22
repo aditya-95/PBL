@@ -129,7 +129,8 @@ void printRRB(RectangleRB *rrb, int rrb_counter) {
 
 
 bool rrbFloorClip(RectangleRB *rrb) {
-	if (rrb->circle_target.y >= 600) {
+	int ground_level = 500 - 120; // screen_height - 100
+	if (rrb->circle_target.y >= ground_level) {
 		return false;
 	}
 	else {
@@ -151,7 +152,7 @@ void rrbGetInfo(RectangleRB *rrb) {
 int main() {
 	InitialSetup();
 
-	const int screen_width = 1280, screen_height = 720;
+	const int screen_width = 800, screen_height = 500;
 	SDL_Window* window = SDL_CreateWindow("another try", SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED, screen_width, screen_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -182,8 +183,8 @@ int main() {
 	char rrb_resultant[100];
 	char r_direction[100];
 	char final_string[400];
-	// char *result;
-	// int len = 0;
+	char *result;
+	int len = 0;
 
 	// [IMPORTANT] KEEP TRACK OF RECTANGLE RBs'
 	RectangleRB rrb[11];
@@ -289,6 +290,7 @@ int main() {
 		resultant = sqrt((rrb[info_counter].rvel.x * rrb[info_counter].rvel.x) + (rrb[info_counter].rvel.y * rrb[info_counter].rvel.y));
 
 		/*
+		 * first approach
 		len = snprintf(NULL, 0, "%d\nvelocity: (%f, %f)\nResultant velocity: %f @ %f", 
 				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
 		result = malloc(len + 1);
@@ -296,6 +298,7 @@ int main() {
 				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
 
 
+		//Another approach
 		strcat(velocity_x, "\n");
 		gcvt(rrb[info_counter].rvel.y, 6, velocity_y);
 		strcat(velocity_y, "\n");
@@ -312,10 +315,8 @@ int main() {
 		strcat(final_string, " @ ");
 		strcat(final_string, r_direction);
 
-		text_surface = TTF_RenderText_Blended_Wrapped(font, final_string, font_color, 0);
-
-		memset(final_string, 0, sizeof(final_string));
-
+		text_surface = TTF_RenderText_Blended_Wrapped(font, result, font_color, 0);
+		free(result);
 		text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
 		SDL_FreeSurface(text_surface);
 		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
