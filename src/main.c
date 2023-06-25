@@ -26,6 +26,7 @@ typedef struct {
 	vec2 vel1, vel2, vel3, acc1, acc2, acc3;		// velocity and acceleration
 	vec2 rvel, racc;								// resultatn
 	double rvel_dir, racc_dir;
+	vec2 initial_position;
 
 } RectangleRB;
 
@@ -103,6 +104,9 @@ void AddRectRB(int x, int y, RectangleRB* rectRB) {
 	rectRB->circle_target.h = 30;
 	rectRB->circle_target.x = x-15;
 	rectRB->circle_target.y = y-15;
+
+	rectRB->initial_position.x = x-15;
+	rectRB->initial_position.y = y-15;
 }
 
 void InitialSetup() {
@@ -112,21 +116,6 @@ void InitialSetup() {
 		printf("SDL2_ttf not initialized. ERROR: %s\n", TTF_GetError());
 	}
 }
-
-// for testing
-void printRRB(RectangleRB *rrb, int rrb_counter) {
-	for (int i = 0; i < rrb_counter; i++) {
-		printf("rrb[%d]:\n %f %f %f %f %f %f\n %f %f %f %f %f %f\n\n",i, rrb[i].v1,
-				rrb[i].v2,rrb[i].v3, rrb[i].a1, rrb[i].a2, rrb[i].a3, rrb[i].dv1, 
-				rrb[i].dv2, rrb[i].dv3, rrb[i].da1, rrb[i].da2, rrb[i].da3);
-
-		printf(" vec1: %f %f \n vec2: %f %f \n vec3: %f %f \n acc1: %f %f \n acc2: %f %f \n acc3: %f %f\n\n resultant velocity: %f %f\n resultant acceleration: %f %f\n resultant velocity direction: %f \n",
-				rrb[i].vel1.x, 	rrb[i].vel1.y, rrb[i].vel2.x, rrb[i].vel2.y, rrb[i].vel3.x, rrb[i].vel3.y, 
-				rrb[i].acc1.x, rrb[i].acc1.y, rrb[i].acc2.x, rrb[i].acc2.y, rrb[i].acc3.x, rrb[i].acc3.y,
-				rrb[i].rvel.x, rrb[i].rvel.y, rrb[i].racc.x, rrb[i].racc.y, rrb[i].rvel_dir);
-	}
-}
-
 
 bool rrbFloorClip(RectangleRB *rrb) {
 	int ground_level = 500 - 120; // screen_height - 100
@@ -214,7 +203,7 @@ int main() {
 
 	bool running = true, read_config = false, pause = false; 
 	int return_count = 0, info_counter = 0;
-	float resultant = 0;
+	float resultant = 0, displacement = 0, x_d = 0, y_d = 0;
 
 	while(running) {
 		Uint32 start = SDL_GetTicks();
@@ -252,7 +241,6 @@ int main() {
 				if (event.key.keysym.scancode == SDL_SCANCODE_RETURN) {
 					return_count += 1;
 				}
-
 				// RESET
 				if (event.key.keysym.scancode == SDL_SCANCODE_R) {
 					rrb_counter = 0;
@@ -261,11 +249,14 @@ int main() {
 
 				// Circle through object data
 				if (event.key.keysym.scancode == SDL_SCANCODE_RIGHT) {
-					if (info_counter > 10) {
+					info_counter++;
+					if (info_counter == 10)
 						info_counter = 0;
-					}
-					else {
-						info_counter++;
+				}
+				if (event.key.keysym.scancode == SDL_SCANCODE_LEFT) {
+					info_counter--;
+					if (info_counter == -1) {
+						info_counter = 9;
 					}
 				}
 
@@ -275,7 +266,6 @@ int main() {
 		// Read config
 		if (return_count == 1) {
 			readConfig("config", rrb, rrb_counter);
-			// printRRB(rrb, rrb_counter);
 			read_config = false;
 		}
 
@@ -286,50 +276,20 @@ int main() {
 		SDL_RenderCopy(renderer, background_image, NULL, &bg_rect);
 		SDL_RenderCopy(renderer, ground_image, NULL, &ground_rect);
 
-		// text drawing (THIS IS REDUCING PERFORANCE)
-		resultant = sqrt((rrb[info_counter].rvel.x * rrb[info_counter].rvel.x) + (rrb[info_counter].rvel.y * rrb[info_counter].rvel.y));
-
-		/*
-		 * first approach
-		len = snprintf(NULL, 0, "%d\nvelocity: (%f, %f)\nResultant velocity: %f @ %f", 
-				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
-		result = malloc(len + 1);
-		snprintf(result, len + 1, "%d\nvelocity: (%f, %f)\nResultant velocity: %f @ %f", 
-				info_counter, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y, resultant, rrb[info_counter].rvel_dir);
-
-
-		//Another approach
-		strcat(velocity_x, "\n");
-		gcvt(rrb[info_counter].rvel.y, 6, velocity_y);
-		strcat(velocity_y, "\n");
-		gcvt(resultant, 6, rrb_resultant);
-		strcat(rrb_resultant, "\n");
-		gcvt(rrb[info_counter].rvel_dir, 6, r_direction);
-
-		strcat(final_string, "Resultant velocity_x: ");
-		strcat(final_string, velocity_x);
-		strcat(final_string, "Resultnat velocity_y:");
-		strcat(final_string, velocity_y);
-		strcat(final_string, "Resultant: ");
-		strcat(final_string, rrb_resultant);
-		strcat(final_string, " @ ");
-		strcat(final_string, r_direction);
-
-		text_surface = TTF_RenderText_Blended_Wrapped(font, result, font_color, 0);
-		free(result);
-		text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
-		SDL_FreeSurface(text_surface);
-		SDL_RenderCopy(renderer, text_texture, NULL, &text_rect);
-		*/
-
-		printf("%d. Resultant velocity = %f @ %f | Resultant Velocity Components = (%f, %f)\r", 
-				info_counter, resultant, rrb[info_counter].rvel_dir, rrb[info_counter].rvel.x, rrb[info_counter].rvel.y);
-
 		for (int i = 0; i < rrb_counter; i++) {
 			if (return_count >= 2 && !pause && rrbFloorClip(&rrb[i])) {
 				pointMassPhysics(&rrb[i]);
 				// rrbGetInfo(&rrb[i]);
 			}
+
+			resultant = sqrt((rrb[info_counter].rvel.x * rrb[info_counter].rvel.x) + (rrb[info_counter].rvel.y * rrb[info_counter].rvel.y));
+			x_d = rrb[info_counter].circle_target.x - rrb[info_counter].initial_position.x;
+			y_d = rrb[info_counter].circle_target.y - rrb[info_counter].initial_position.y;
+			displacement = sqrt((x_d * x_d) + (y_d * y_d));
+			printf("(%d)---------------------------------------------------------\n", info_counter+1);
+			printf("\tResultant = %f @ %f\n", resultant, rrb[info_counter].rvel_dir);
+			printf("\tResultant Components (%f, %f)\n", rrb[info_counter].rvel.x, rrb[info_counter].rvel.y);
+			printf("\tDisplacement = %f\n", displacement);
 
 			// SHOW VELOCITY VECTOR ARROWS
 			if (return_count == 1) {
@@ -359,7 +319,7 @@ int main() {
 				resultant_arrow_rect.x = rrb[i].circle_target.x + 15;
 				resultant_arrow_rect.y = rrb[i].circle_target.y + 13;
 
-				// RESOLVE THIS
+				// small problem with angle here
 				SDL_RenderCopyEx(renderer, resultant_arrow_image, NULL, &resultant_arrow_rect, 
 						rrb[i].rvel_dir, &arrow_pivot_point, SDL_FLIP_NONE);
 			}
@@ -376,7 +336,6 @@ int main() {
 		}
 
 	} // end main loop
-	// printRRB(&rrb, rrb_counter);
 
 	SDL_DestroyWindow(window);
 	TTF_CloseFont(font);
